@@ -1,6 +1,7 @@
 "use client";
 
-import { FiGlobe, FiGithub, FiArrowUpRight } from "react-icons/fi";
+import { useState } from "react";
+import { FiGithub, FiGlobe, FiLock } from "react-icons/fi";
 import type { Project, ProjectActionLabels } from "@/types/cms";
 import { urlForImage } from "@/lib/sanity/image";
 
@@ -12,6 +13,162 @@ interface ProjectsSectionProps {
   actionLabels?: ProjectActionLabels;
 }
 
+function getHostname(url?: string): string {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+function thumIoUrl(url: string): string {
+  return `https://image.thum.io/get/width/1280/crop/900/${url}`;
+}
+
+function mshotUrl(url: string): string {
+  return `https://s0.wp.com/mshots/v1/${encodeURIComponent(url)}?w=1280&h=900`;
+}
+
+function buildCandidateSources(project: Project): string[] {
+  const candidates: string[] = [];
+  if (project.image) {
+    candidates.push(urlForImage(project.image).width(1280).height(800).url());
+  }
+  const live = project.storeUrl || project.adminUrl;
+  if (live) {
+    candidates.push(thumIoUrl(live));
+    candidates.push(mshotUrl(live));
+  }
+  return candidates;
+}
+
+function ProjectRow({
+  project,
+  index,
+  actionLabels,
+}: {
+  project: Project;
+  index: number;
+  actionLabels?: ProjectActionLabels;
+}) {
+  const [candidates] = useState<string[]>(() => buildCandidateSources(project));
+  const [candidateIndex, setCandidateIndex] = useState(0);
+
+  const liveUrl = project.storeUrl || project.adminUrl || "";
+  const sourceUrl = project.githubUrl;
+  const adminUrl = project.adminUrl;
+  const src = candidateIndex === -1 ? "" : candidates[candidateIndex] ?? "";
+
+  function handleImageError() {
+    if (candidateIndex < candidates.length - 1) {
+      setCandidateIndex(candidateIndex + 1);
+    } else {
+      setCandidateIndex(-1);
+    }
+  }
+
+  return (
+    <div className="group grid overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md">
+      <div className="relative border-border bg-accent md:border-r">
+        <div className="flex items-center gap-1.5 border-b border-border bg-muted px-4 py-2.5">
+          <span className="size-2.5 rounded-full bg-red-400/80" />
+          <span className="size-2.5 rounded-full bg-yellow-400/80" />
+          <span className="size-2.5 rounded-full bg-green-400/80" />
+          <span className="ml-3 inline-flex h-5 min-w-0 flex-1 items-center justify-center truncate rounded-md bg-background px-3 text-[10px] text-muted-foreground">
+            {getHostname(liveUrl) || project.title}
+          </span>
+        </div>
+
+        <div className="relative aspect-[16/11] overflow-hidden">
+          {src ? (
+            <img
+              src={src}
+              alt={`Screenshot of ${project.title}`}
+              loading="lazy"
+              onError={handleImageError}
+              className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-accent to-muted">
+              <span className="text-6xl font-bold text-muted-foreground/20">
+                {project.title.charAt(0)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 p-6 md:p-8">
+        <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <span className="size-1 rounded-full bg-muted-foreground/60" />
+          <span>{project.techStack?.[0] ?? "Project"}</span>
+        </div>
+
+        <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
+          {project.title}
+        </h3>
+
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {project.description}
+        </p>
+
+        {project.techStack?.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {project.techStack.map((tech) => (
+              <div
+                key={tech}
+                className="inline-flex h-6 w-fit items-center rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground"
+              >
+                {tech}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-auto flex flex-wrap gap-3 pt-1">
+          {liveUrl ? (
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href={liveUrl}
+              className="inline-flex items-center gap-2 rounded-md bg-foreground px-6 py-2.5 text-sm font-medium text-background transition-all hover:-translate-y-0.5 hover:bg-foreground/90"
+            >
+              <FiGlobe className="size-4" />
+              {actionLabels?.live || "Live Demo"}
+            </a>
+          ) : null}
+
+          {sourceUrl ? (
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href={sourceUrl}
+              className="inline-flex items-center gap-2 rounded-md border border-foreground/20 px-6 py-2.5 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-muted"
+            >
+              <FiGithub className="size-4" />
+              {actionLabels?.source || "Source Code"}
+            </a>
+          ) : null}
+
+          {adminUrl && adminUrl !== liveUrl ? (
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              href={adminUrl}
+              className="inline-flex items-center gap-2 rounded-md border border-foreground/20 px-6 py-2.5 text-sm font-medium text-foreground transition-all hover:-translate-y-0.5 hover:bg-muted"
+            >
+              <FiLock className="size-4" />
+              Admin Demo
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProjectsSection({
   projects,
   sectionLabel,
@@ -19,22 +176,23 @@ export function ProjectsSection({
   description,
   actionLabels,
 }: ProjectsSectionProps) {
-
   return (
-    <section id="projects">
-      <div className="flex min-h-0 flex-col gap-y-8">
-        <div className="flex flex-col gap-y-4 items-center justify-center">
-          <div className="flex items-center w-full max-w-[800px] mx-auto">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent from-5% via-border via-95% to-transparent" />
+    <section id="projects" className="relative px-6 py-20">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-12 flex flex-col items-center gap-y-4">
+          <div className="flex w-full max-w-[800px] items-center">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent from-5% via-border via-95% to-transparent" />
             <div className="z-10 rounded-xl border border-border bg-muted px-4 py-1">
               <span className="text-sm font-medium text-foreground">{sectionLabel}</span>
             </div>
-            <div className="flex-1 h-px bg-gradient-to-l from-transparent from-5% via-border via-95% to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent from-5% via-border via-95% to-transparent" />
           </div>
 
-          <div className="flex flex-col gap-y-3 items-center justify-center">
+          <div className="flex flex-col items-center gap-y-3">
             {heading ? (
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">{heading}</h2>
+              <h2 className="text-center text-3xl font-bold tracking-tighter sm:text-4xl">
+                {heading}
+              </h2>
             ) : null}
             {description ? (
               <p className="max-w-[600px] text-balance text-center text-muted-foreground md:text-lg/relaxed">
@@ -44,96 +202,14 @@ export function ProjectsSection({
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-[800px] auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2">
-          {projects.map((project) => (
-            <div
+        <div className="flex flex-col gap-8">
+          {projects.map((project, index) => (
+            <ProjectRow
               key={project._id}
-              className="flex h-full flex-col overflow-hidden rounded-xl border border-border transition-all duration-200 hover:cursor-pointer hover:ring-2 hover:ring-muted"
-            >
-              <div className="relative shrink-0">
-                <a
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                  href={project.storeUrl || project.githubUrl || "#"}
-                >
-                  <div className="flex h-48 w-full items-center justify-center bg-accent">
-                    {project.image ? (
-                      <img
-                        src={urlForImage(project.image).width(600).height(300).url()}
-                        alt={project.title}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-4xl font-bold text-muted-foreground/20">
-                        {project.title.charAt(0)}
-                      </span>
-                    )}
-                  </div>
-                </a>
-
-                <div className="absolute right-2 top-2 flex flex-wrap gap-2">
-                  {project.storeUrl ? (
-                    <a
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      href={project.storeUrl}
-                    >
-                      <div className="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-black px-2.5 py-0.5 text-xs font-semibold text-white shadow transition-colors hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90">
-                        <FiGlobe className="size-3" />
-                        {actionLabels?.live || "Website"}
-                      </div>
-                    </a>
-                  ) : null}
-                  {project.githubUrl ? (
-                    <a
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      href={project.githubUrl}
-                    >
-                      <div className="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-black px-2.5 py-0.5 text-xs font-semibold text-white shadow transition-colors hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90">
-                        <FiGithub className="size-3" />
-                        {actionLabels?.source || "Source"}
-                      </div>
-                    </a>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex flex-1 flex-col gap-3 p-6">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col gap-1">
-                    <h3 className="font-semibold">{project.title}</h3>
-                  </div>
-                  <a
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-sm text-muted-foreground transition-colors hover:text-foreground"
-                    aria-label={`Open ${project.title}`}
-                    href={project.storeUrl || project.githubUrl || "#"}
-                  >
-                    <FiArrowUpRight className="h-4 w-4" />
-                  </a>
-                </div>
-
-                <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
-                  {project.description}
-                </p>
-
-                {project.techStack?.length ? (
-                  <div className="mt-auto flex flex-wrap gap-1">
-                    {project.techStack.map((tech) => (
-                      <div
-                        key={tech}
-                        className="inline-flex h-6 w-fit items-center rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors"
-                      >
-                        {tech}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </div>
+              project={project}
+              index={index}
+              actionLabels={actionLabels}
+            />
           ))}
         </div>
       </div>

@@ -58,6 +58,8 @@ export interface Project {
   description: string;
   detailedDescription?: string;
   image?: SanityImageAsset;
+  imageUrl?: string;
+  screenshotUrl?: string;
   storeUrl?: string;
   adminUrl?: string;
   adminEmail?: string;

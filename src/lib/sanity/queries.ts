@@ -43,8 +43,11 @@ export const portfolioQuery = `
     "slug": slug.current,
     description,
     image,
+    imageUrl,
+    screenshotUrl,
     techStack,
     "storeUrl": storeUrl,
+    adminUrl,
     githubUrl,
     order
   },

@@ -11,6 +11,7 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
 import { FaFilePdf } from "react-icons/fa6";
+import { urlForImage } from "@/lib/sanity/image";
 
 type Section = "personalInfo" | "skills" | "projects" | "experience" | "socialLinks" | "siteSettings" | "categories" | "about";
 
@@ -644,6 +645,13 @@ export default function AdminPage() {
                       key={doc._id}
                       className="flex items-center gap-4 rounded-2xl border border-foreground/10 bg-card p-5 transition-all hover:shadow-sm"
                     >
+                      {doc.imageUrl || doc.image ? (
+                        <img
+                          src={doc.imageUrl || urlForImage(doc.image).width(160).height(96).url()}
+                          alt={getDocTitle(doc)}
+                          className="h-14 w-24 shrink-0 rounded-lg border border-foreground/10 object-cover"
+                        />
+                      ) : null}
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">
                           {getDocTitle(doc)}
@@ -826,7 +834,10 @@ const formFields: Record<string, { key: string; label: string; type: string; pla
   project: [
     { key: "title", label: "Title", type: "text" },
     { key: "order", label: "Order", type: "number" },
-    { key: "storeUrl", label: "Store URL", type: "text" },
+    { key: "imageUrl", label: "Project Image (upload)", type: "imageUpload" },
+    { key: "screenshotUrl", label: "Screenshot URL (exact page)", type: "text" },
+    { key: "storeUrl", label: "Live URL", type: "text" },
+    { key: "adminUrl", label: "Admin Dashboard URL", type: "text" },
     { key: "githubUrl", label: "GitHub URL", type: "text" },
     { key: "description", label: "Description", type: "textarea" },
     { key: "techStack", label: "Tech Stack", type: "array" },

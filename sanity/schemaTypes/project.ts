@@ -38,6 +38,18 @@ export const project = defineType({
       options: { hotspot: true },
     }),
     defineField({
+      name: "imageUrl",
+      title: "Image URL (uploaded)",
+      type: "string",
+      description: "Optional custom image URL. If set, it takes priority over the screenshot.",
+    }),
+    defineField({
+      name: "screenshotUrl",
+      title: "Screenshot URL",
+      type: "url",
+      description: "Exact page to auto-capture for the preview (e.g. https://site.com/products). Falls back to Store URL.",
+    }),
+    defineField({
       name: "storeUrl",
       title: "Store URL",
       type: "url",

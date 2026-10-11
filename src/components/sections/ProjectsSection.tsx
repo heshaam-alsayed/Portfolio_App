@@ -32,13 +32,16 @@ function mshotUrl(url: string): string {
 
 function buildCandidateSources(project: Project): string[] {
   const candidates: string[] = [];
+  if (project.imageUrl) {
+    candidates.push(project.imageUrl);
+  }
   if (project.image) {
     candidates.push(urlForImage(project.image).width(1280).height(800).url());
   }
-  const live = project.storeUrl || project.adminUrl;
-  if (live) {
-    candidates.push(thumIoUrl(live));
-    candidates.push(mshotUrl(live));
+  const capture = project.screenshotUrl || project.storeUrl || project.adminUrl;
+  if (capture) {
+    candidates.push(thumIoUrl(capture));
+    candidates.push(mshotUrl(capture));
   }
   return candidates;
 }
@@ -76,7 +79,7 @@ function ProjectRow({
           <span className="size-2.5 rounded-full bg-yellow-400/80" />
           <span className="size-2.5 rounded-full bg-green-400/80" />
           <span className="ml-3 inline-flex h-5 min-w-0 flex-1 items-center justify-center truncate rounded-md bg-background px-3 text-[10px] text-muted-foreground">
-            {getHostname(liveUrl) || project.title}
+            {getHostname(project.screenshotUrl || liveUrl) || project.title}
           </span>
         </div>
 
